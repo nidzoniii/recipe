@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>My Recipes</title>
+  <style>
+    :root {
+      --bg: #f2f2f0;
+      --card: #ffffff;
+      --accent: #4a7c59;
+      --accent-light: #eaf2ec;
+      --text: #1a1a1a;
+      --muted: #8e8e93;
+      --border: #e5e5ea;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      max-width: 430px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      padding-top: calc(var(--safe-top) + 12px);
+      padding-bottom: 12px;
+      padding-left: 16px;
+      padding-right: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .back-btn {
+      width: 32px;
+      height: 32px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: none;
+      font-size: 1.7rem;
+      line-height: 1;
+      cursor: pointer;
+      color: var(--accent);
+      padding: 0;
+      margin-right: 2px;
+      flex-shrink: 0;
+    }
+    .back-btn.visible { display: flex; }
+
+    .header-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+    }
+
+    /* ── Home ── */
+    #home-view { padding: 16px; }
+
+    .recipe-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .recipe-card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      transition: opacity 0.12s;
+    }
+    .recipe-card:active { opacity: 0.55; }
+
+    .recipe-emoji { font-size: 2rem; width: 44px; text-align: center; flex-shrink: 0; }
+
+    .recipe-info { flex: 1; min-width: 0; }
+    .recipe-name { font-size: 1rem; font-weight: 500; }
+    .recipe-base { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+    .recipe-chevron { color: var(--muted); font-size: 1.1rem; flex-shrink: 0; }
+
+    /* ── Detail ── */
+    #detail-view { display: none; padding: 16px; }
+    #detail-view.active { display: block; }
+
+    /* Serving selector */
+    .serving-card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 14px 18px;
+      border: 1px solid var(--border);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .serving-label { font-size: 0.8rem; color: var(--muted); margin-bottom: 2px; }
+    .serving-value { font-size: 1.25rem; font-weight: 600; }
+
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .stepper-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: none;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 1.5rem;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.12s;
+      font-weight: 300;
+    }
+    .stepper-btn:active { background: #c8dece; }
+    .stepper-btn:disabled {
+      background: var(--bg);
+      color: var(--border);
+      cursor: default;
+    }
+
+    .stepper-num {
+      font-size: 1.3rem;
+      font-weight: 600;
+      width: 28px;
+      text-align: center;
+      color: var(--accent);
+    }
+
+    /* Sections */
+    .section {
+      background: var(--card);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      color: var(--muted);
+      padding: 10px 16px 8px;
+      border-bottom: 1px solid var(--border);
+      background: #fafaf8;
+    }
+
+    .ing-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      gap: 10px;
+      min-height: 44px;
+    }
+    .ing-row:last-child { border-bottom: none; }
+
+    .ing-name {
+      font-size: 0.93rem;
+      flex: 1;
+      line-height: 1.3;
+    }
+
+    .ing-amount {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-align: right;
+      flex-shrink: 0;
+      max-width: 48%;
+    }
+    .ing-amount.taste {
+      color: var(--muted);
+      font-weight: 400;
+      font-style: italic;
+    }
+
+    /* raw row spans full width */
+    .ing-row.raw-row .ing-name { flex: 1; font-size: 0.93rem; }
+
+    /* bottom safe area */
+    .safe-bottom { height: calc(var(--safe-bottom) + 24px); }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <button class="back-btn" id="back-btn">‹</button>
+  <span class="header-title" id="header-title">My Recipes</span>
+</div>
+
+<div id="home-view">
+  <div class="recipe-list" id="recipe-list"></div>
+</div>
+
+<div id="detail-view">
+  <div class="serving-card">
+    <div>
+      <div class="serving-label">Servings</div>
+      <div class="serving-value" id="serving-display">2 people</div>
+    </div>
+    <div class="stepper">
+      <button class="stepper-btn" id="btn-minus">−</button>
+      <span class="stepper-num" id="stepper-num">2</span>
+      <button class="stepper-btn" id="btn-plus">+</button>
+    </div>
+  </div>
+  <div id="ingredient-list"></div>
+</div>
+
+<div class="safe-bottom"></div>
+
+<script>
+// ── Recipe data ──────────────────────────────────────────────────────────────
+// amount / amountMin+amountMax = scalable numbers
+// unit = 'g', 'ml', 'tsp', 'tbsp', 'dl', 'L', '' (count)
+// taste: true = show "to taste"
+// raw: string = scale every number in the string proportionally
+
+const recipes = [
+  {
+    id: 'pizza', name: 'Pizza', emoji: '🍕', baseServings: 2,
+    sections: [
+      { name: 'Dough', ingredients: [
+        { amount: 250, unit: 'ml', name: 'Cold water' },
+        { amount: 400, unit: 'g',  name: 'Flour' },
+        { amount: 1,   unit: 'g',  name: 'Dry yeast' },
+        { amount: 8,   unit: 'g',  name: 'Sea salt' },
+      ]},
+      { name: 'Toppings', ingredients: [
+        { name: 'Tomato sauce', taste: true },
+        { name: 'Parmesan',     taste: true },
+        { name: 'Salami',       taste: true },
+        { name: 'Mozzarella',   taste: true },
+        { name: 'Chilli',       taste: true },
+        { name: 'Nduja',        taste: true },
+        { name: 'Basil',        taste: true },
+        { name: 'Olive oil',    taste: true },
+        { name: 'Cola',         taste: true },
+      ]},
+    ]
+  },
+  {
+    id: 'lasagna', name: 'Lasagna', emoji: '🫕', baseServings: 4,
+    sections: [
+      { name: 'Meat sauce (bolognaise)', ingredients: [
+        { amount: 1000, unit: 'g',    name: 'Minced meat' },
+        { amountMin: 2, amountMax: 3, unit: '', name: 'Yellow onions' },
+        { amount: 5,    unit: '',     name: 'Garlic cloves' },
+        { amount: 2,    unit: '',     name: 'Mid carrots' },
+        { amount: 2,    unit: '',     name: 'Cubes of stock (vegetable preferred)' },
+        { amount: 140,  unit: 'g',    name: 'Tomato purée' },
+        { amount: 400,  unit: 'g',    name: 'Mashed tomatoes' },
+        { amount: 400,  unit: 'g',    name: 'Tomato sauce' },
+        { amount: 2,    unit: 'tbsp', name: 'Soy sauce' },
+        { name: 'Pepper spice',  taste: true },
+        { name: 'Chilli powder', taste: true },
+        { name: 'Paprika powder',taste: true },
+      ]},
+      { name: 'Béchamel', ingredients: [
+        { amount: 45, unit: 'g', name: 'Butter (3 tbsp)' },
+        { amount: 30, unit: 'g', name: 'Flour (3 tbsp)' },
+        { amount: 8,  unit: 'L', name: 'Milk' },
+      ]},
+      { name: 'Topping', ingredients: [
+        { name: 'Shredded cheese', taste: true },
+        { name: 'Parmesan',        taste: true },
+      ]},
+    ]
+  },
+  {
+    id: 'ustipke', name: 'Uštipci', emoji: '🍩', baseServings: 2,
+    sections: [
+      { name: 'Batter', ingredients: [
+        { amount: 2,   unit: '',    name: 'Eggs' },
+        { amount: 100, unit: 'ml', name: 'Sparkling water' },
+        { amount: 200, unit: 'ml', name: 'Milk' },
+        { amountMin: 200, amountMax: 250, unit: 'g', name: 'Flour' },
+        { amount: 0.5, unit: 'tsp', name: 'Baking powder' },
+        { amount: 1,   unit: 'tbsp', name: 'Alcohol (whiskey or rum)' },
+        { name: 'Oil',  taste: true },
+        { name: 'Salt', taste: true },
+      ]},
+    ]
+  },
+  {
+    id: 'chili', name: 'Chili con carne', emoji: '🌶️', baseServings: 2,
+    sections: [
+      { name: 'Ingredients', ingredients: [
+        { amount: 2,   unit: '', name: 'Yellow onions' },
+        { amount: 5,   unit: '', name: 'Garlic cloves' },
+        { amount: 1,   unit: '', name: 'Red pepper' },
+        { amount: 500, unit: 'g', name: 'Minced meat' },
+        { amount: 1,   unit: '', name: 'Chilli' },
+        { amount: 1,   unit: '', name: 'Bag of spice (taco or chilli con carne)' },
+        { amount: 400, unit: 'g', name: 'Mashed tomatoes' },
+        { amount: 700, unit: 'g', name: 'White beans in tomato sauce' },
+        { amount: 200, unit: 'g', name: 'Black beans' },
+        { name: 'Rice',        taste: true },
+        { name: 'Sour cream',  taste: true },
+      ]},
+    ]
+  },
+  {
+    id: 'bolognaise', name: 'Bolognaise', emoji: '🍝', baseServings: 4,
+    sections: [
+      { name: 'Sauce', ingredients: [
+        { amount: 1000, unit: 'g',    name: 'Minced meat' },
+        { amountMin: 2, amountMax: 3, unit: '', name: 'Yellow onions' },
+        { amount: 5,    unit: '',     name: 'Garlic cloves' },
+        { amount: 2,    unit: '',     name: 'Mid carrots' },
+        { amount: 2,    unit: '',     name: 'Cubes of stock (vegetable preferred)' },
+        { amount: 140,  unit: 'g',    name: 'Tomato purée' },
+        { amount: 400,  unit: 'g',    name: 'Mashed tomatoes' },
+        { amount: 400,  unit: 'g',    name: 'Tomato sauce' },
+        { amount: 2,    unit: 'tbsp', name: 'Soy sauce' },
+        { name: 'Pepper spice',   taste: true },
+        { name: 'Chilli powder',  taste: true },
+        { name: 'Paprika powder', taste: true },
+      ]},
+      { name: 'Pasta', ingredients: [
+        { amountMin: 250, amountMax: 300, unit: 'g', name: 'Pasta' },
+      ]},
+    ]
+  },
+  {
+    id: 'asian', name: 'Asian dish', emoji: '🥢', baseServings: 2,
+    sections: [
+      { name: 'Ingredients', ingredients: [
+        { amountMin: 350, amountMax: 500, unit: 'g', name: 'Protein' },
+        { amount: 1,   unit: '', name: 'Onion' },
+        { amount: 3,   unit: '', name: 'Garlic cloves' },
+        { amount: 1,   unit: '', name: 'Chilli' },
+        { amount: 40,  unit: 'ml', name: 'Soy' },
+        { amount: 160, unit: 'ml', name: 'Water' },
+        { amount: 2,   unit: '', name: 'Big teaspoons cornstarch' },
+        { amount: 1,   unit: 'tsp', name: 'Chilli oil' },
+        { name: 'Rice', taste: true },
+      ]},
+    ]
+  },
+  {
+    id: 'nidzokee', name: 'Nidzo kee', emoji: '🍜', baseServings: 2,
+    sections: [
+      { name: 'Sauce', ingredients: [
+        { amount: 1,   unit: '', name: 'Onion' },
+        { amount: 1,   unit: '', name: 'Green pepper' },
+        { amount: 3,   unit: '', name: 'Garlic cloves' },
+        { amount: 1,   unit: '', name: 'Chilli' },
+        { amount: 40,  unit: 'ml', name: 'Soy' },
+        { amount: 160, unit: 'ml', name: 'Water' },
+        { amount: 2,   unit: '', name: 'Big teaspoons cornstarch' },
+        { amount: 1,   unit: 'tbsp', name: 'Oyster sauce' },
+        { amount: 1,   unit: '', name: 'Small can black beans' },
+        { amount: 1,   unit: 'tsp', name: 'Chilli oil' },
+      ]},
+      { name: 'Beef', ingredients: [
+        { amountMin: 400, amountMax: 500, unit: 'g', name: 'Beef' },
+        { amount: 1, unit: 'tsp', name: 'Soy' },
+        { amount: 1, unit: 'tsp', name: 'Oyster sauce' },
+        { amount: 1, unit: 'tsp', name: 'Cornstarch' },
+      ]},
+      { name: 'Noodles', ingredients: [
+        { raw: '150-180g fresh noodles or 120g dried' },
+        { amount: 125, unit: 'g', name: 'Pork / bacon' },
+        { amount: 2,   unit: '', name: 'Garlic cloves' },
+        { amount: 2,   unit: '', name: 'Spring onions' },
+        { amount: 1,   unit: '', name: 'Egg' },
+        { name: 'Soy',         taste: true },
+        { name: 'Oyster sauce',taste: true },
+      ]},
+    ]
+  },
+  {
+    id: 'kladdkaka', name: 'Kladdkaka', emoji: '🍫', baseServings: 2,
+    sections: [
+      { name: 'Batter', ingredients: [
+        { amount: 2,   unit: '', name: 'Eggs' },
+        { amountMin: 2, amountMax: 2.5, unit: 'dl', name: 'Sugar' },
+        { amount: 1.5, unit: 'dl', name: 'Flour' },
+        { amount: 100, unit: 'g',  name: 'Melted butter' },
+        { amount: 3,   unit: 'tbsp', name: 'Cocoa' },
+        { amount: 2,   unit: 'tsp', name: 'Vanilla sugar' },
+        { amount: 0.5, unit: 'tsp', name: 'Salt' },
+      ]},
+    ]
+  },
+  {
+    id: 'halloumi', name: 'Halloumi & mushroom pasta', emoji: '🧀', baseServings: 2,
+    sections: [
+      { name: 'Ingredients', ingredients: [
+        { amount: 250,  unit: 'g',  name: 'Mushrooms' },
+        { amountMin: 300, amountMax: 350, unit: 'g', name: 'Halloumi' },
+        { amount: 250,  unit: 'ml', name: 'Cream' },
+        { name: 'Salt',          taste: true },
+        { name: 'Pepper',        taste: true },
+        { name: 'Parmesan',      taste: true },
+        { name: 'Garlic powder', taste: true },
+        { name: 'Chilli powder', taste: true },
+      ]},
+      { name: 'Pasta', ingredients: [
+        { amountMin: 250, amountMax: 300, unit: 'g', name: 'Pasta' },
+      ]},
+    ]
+  },
+  {
+    id: 'pestopasta', name: 'Cream pesto pasta', emoji: '🌿', baseServings: 2,
+    sections: [
+      { name: 'Ingredients', ingredients: [
+        { amountMin: 300, amountMax: 500, unit: 'g', name: 'Protein' },
+        { amount: 250, unit: 'ml', name: 'Cream' },
+        { amount: 120, unit: 'g',  name: 'Pesto' },
+        { name: 'Parmesan', taste: true },
+      ]},
+      { name: 'Pasta', ingredients: [
+        { amountMin: 250, amountMax: 300, unit: 'g', name: 'Pasta' },
+      ]},
+    ]
+  },
+  {
+    id: 'spicychicken', name: 'Spicy lime chicken', emoji: '🍋', baseServings: 2,
+    sections: [
+      { name: 'Chicken', ingredients: [
+        { amountMin: 300, amountMax: 500, unit: 'g', name: 'Chicken' },
+        { amount: 1, unit: 'tbsp', name: 'Soy' },
+        { name: 'Oil',              taste: true },
+        { name: 'Lime',             taste: true },
+        { name: 'Flour (for dipping)', taste: true },
+      ]},
+      { name: 'Sauce', ingredients: [
+        { amount: 1,    unit: '', name: 'Chilli' },
+        { amount: 3,    unit: '', name: 'Garlic cloves' },
+        { amount: 30,   unit: 'ml', name: 'Soy' },
+        { amount: 120,  unit: 'ml', name: 'Water' },
+        { amount: 2,    unit: '', name: 'Big teaspoons cornstarch' },
+        { amount: 1,    unit: 'tbsp', name: 'Oyster sauce' },
+        { amount: 0.5,  unit: 'tsp', name: 'Chilli oil' },
+        { amount: 2,    unit: 'tbsp', name: 'Honey (minimum, adjust to taste)' },
+        { amount: 0.25, unit: '', name: 'Lime' },
+        { amount: 1,    unit: '', name: 'Onion' },
+      ]},
+      { name: 'Fried rice', ingredients: [
+        { amount: 3, unit: '', name: 'Garlic cloves' },
+        { amount: 1, unit: '', name: 'Onion' },
+        { amount: 1, unit: '', name: 'Egg' },
+        { name: 'Frozen mixed veggies', taste: true },
+        { name: 'Rice',        taste: true },
+        { name: 'Soy',         taste: true },
+        { name: 'Oyster sauce',taste: true },
+      ]},
+    ]
+  },
+  {
+    id: 'pannkakor', name: 'Pannkakor', emoji: '🥞', baseServings: 4,
+    sections: [
+      { name: 'Batter', ingredients: [
+        { amount: 3,  unit: '', name: 'Eggs' },
+        { amount: 180, unit: 'g', name: 'Flour (3 dl)' },
+        { amountMin: 500, amountMax: 600, unit: 'ml', name: 'Milk (5–6 dl)' },
+      ]},
+    ]
+  },
+  {
+    id: 'gyros', name: 'Gyros', emoji: '🥙', baseServings: 2,
+    sections: [
+      { name: 'Meat', ingredients: [
+        { amount: 500,  unit: 'g',  name: 'Meat (flatten before marinating)' },
+        { amount: 1,    unit: '',   name: 'Garlic clove' },
+        { amount: 0.5,  unit: '',   name: 'Red onion' },
+        { amount: 1,    unit: 'tsp', name: 'Paprika powder' },
+        { amount: 1,    unit: 'tsp', name: 'Oregano' },
+        { amount: 1,    unit: 'tsp', name: 'Rosemary' },
+        { name: 'Lemon juice', taste: true },
+        { name: 'Mustard',     taste: true },
+        { name: 'Oil',         taste: true },
+      ]},
+      { name: 'Tzatziki', ingredients: [
+        { amountMin: 200, amountMax: 250, unit: 'g', name: 'Full fat greek yogurt' },
+        { amount: 0.5, unit: '', name: 'Cucumber' },
+        { amount: 1,   unit: '', name: 'Garlic clove' },
+        { name: 'Olive oil',   taste: true },
+        { name: 'Lemon juice', taste: true },
+      ]},
+      { name: 'Potatoes', ingredients: [
+        { amount: 500, unit: 'g', name: 'Potatoes' },
+      ]},
+      { name: 'Salad', ingredients: [
+        { name: 'Tomato',    taste: true },
+        { name: 'Red onion', taste: true },
+      ]},
+      { name: 'Pita dough', ingredients: [
+        { amount: 175, unit: 'ml', name: 'Cold water' },
+        { amount: 280, unit: 'g',  name: 'Flour' },
+        { amount: 0.7, unit: 'g',  name: 'Dry yeast' },
+        { amount: 5.6, unit: 'g',  name: 'Sea salt' },
+      ]},
+    ]
+  },
+];
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function fmt(n) {
+  if (Math.abs(n - Math.round(n)) < 0.001) return String(Math.round(n));
+  if (n < 1)  return String(parseFloat(n.toFixed(2)));
+  if (n < 10) return String(parseFloat(n.toFixed(1)));
+  // round to nearest 0.5 for larger values
+  const r = Math.round(n * 2) / 2;
+  return r % 1 === 0 ? String(r) : r.toFixed(1);
+}
+
+const WORD_UNITS = new Set(['tsp', 'tbsp', 'dl', 'L']);
+
+function formatAmount(ing, factor) {
+  if (ing.amountMin !== undefined) {
+    return `${fmt(ing.amountMin * factor)}–${fmt(ing.amountMax * factor)} ${ing.unit}`.trim();
+  }
+  const sep = ing.unit && !WORD_UNITS.has(ing.unit) ? '' : ' ';
+  return `${fmt(ing.amount * factor)}${sep}${ing.unit}`.trim();
+}
+
+function buildIngRow(ing, factor) {
+  const row = document.createElement('div');
+  row.className = 'ing-row';
+
+  if (ing.taste) {
+    row.innerHTML = `<span class="ing-name">${ing.name}</span><span class="ing-amount taste">to taste</span>`;
+    return row;
+  }
+
+  if (ing.raw) {
+    row.classList.add('raw-row');
+    const scaled = ing.raw.replace(/\d+(?:\.\d+)?/g, m => fmt(parseFloat(m) * factor));
+    row.innerHTML = `<span class="ing-name">${scaled}</span>`;
+    return row;
+  }
+
+  row.innerHTML = `<span class="ing-name">${ing.name}</span><span class="ing-amount">${formatAmount(ing, factor)}</span>`;
+  return row;
+}
+
+// ── State ────────────────────────────────────────────────────────────────────
+let currentRecipe = null;
+let servings = 2;
+
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+const homeView      = document.getElementById('home-view');
+const detailView    = document.getElementById('detail-view');
+const backBtn       = document.getElementById('back-btn');
+const headerTitle   = document.getElementById('header-title');
+const servingDisp   = document.getElementById('serving-display');
+const stepperNum    = document.getElementById('stepper-num');
+const btnMinus      = document.getElementById('btn-minus');
+const btnPlus       = document.getElementById('btn-plus');
+const ingredientList= document.getElementById('ingredient-list');
+const recipeList    = document.getElementById('recipe-list');
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function renderIngredients() {
+  const factor = servings / currentRecipe.baseServings;
+  ingredientList.innerHTML = '';
+
+  currentRecipe.sections.forEach(sec => {
+    const wrap = document.createElement('div');
+    wrap.className = 'section';
+    wrap.innerHTML = `<div class="section-title">${sec.name}</div>`;
+    sec.ingredients.forEach(ing => wrap.appendChild(buildIngRow(ing, factor)));
+    ingredientList.appendChild(wrap);
+  });
+
+  const label = servings === 1 ? '1 person' : `${servings} people`;
+  servingDisp.textContent = label;
+  stepperNum.textContent  = servings;
+  btnMinus.disabled = servings <= 1;
+  btnPlus.disabled  = servings >= 10;
+}
+
+function showHome() {
+  detailView.classList.remove('active');
+  homeView.style.display = '';
+  backBtn.classList.remove('visible');
+  headerTitle.textContent = 'My Recipes';
+  window.scrollTo(0, 0);
+}
+
+function showRecipe(recipe) {
+  currentRecipe = recipe;
+  servings = recipe.baseServings;
+  homeView.style.display = 'none';
+  detailView.classList.add('active');
+  backBtn.classList.add('visible');
+  headerTitle.textContent = recipe.name;
+  renderIngredients();
+  window.scrollTo(0, 0);
+}
+
+// ── Build home list ───────────────────────────────────────────────────────────
+recipes.forEach(recipe => {
+  const card = document.createElement('div');
+  card.className = 'recipe-card';
+  card.innerHTML = `
+    <span class="recipe-emoji">${recipe.emoji}</span>
+    <div class="recipe-info">
+      <div class="recipe-name">${recipe.name}</div>
+      <div class="recipe-base">Base recipe: ${recipe.baseServings} people</div>
+    </div>
+    <span class="recipe-chevron">›</span>
+  `;
+  card.addEventListener('click', () => showRecipe(recipe));
+  recipeList.appendChild(card);
+});
+
+// ── Controls ─────────────────────────────────────────────────────────────────
+backBtn.addEventListener('click', showHome);
+
+btnMinus.addEventListener('click', () => {
+  if (servings > 1) { servings--; renderIngredients(); }
+});
+btnPlus.addEventListener('click', () => {
+  if (servings < 10) { servings++; renderIngredients(); }
+});
+</script>
+</body>
+</html>
