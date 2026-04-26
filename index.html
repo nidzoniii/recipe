@@ -70,6 +70,39 @@
       letter-spacing: -0.2px;
     }
 
+    /* ── Cart button in header ── */
+    .cart-btn {
+      margin-left: auto;
+      position: relative;
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: none;
+      font-size: 1.35rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .cart-badge {
+      position: absolute;
+      top: 1px;
+      right: 1px;
+      background: #ff3b30;
+      color: #fff;
+      font-size: 0.58rem;
+      font-weight: 700;
+      border-radius: 10px;
+      min-width: 15px;
+      height: 15px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0 3px;
+      line-height: 1;
+    }
+
     /* ── Home ── */
     #home-view { padding: 16px; }
 
@@ -210,6 +243,74 @@
     /* raw row spans full width */
     .ing-row.raw-row .ing-name { flex: 1; font-size: 0.93rem; }
 
+    /* Add to cart button */
+    .add-to-cart-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 14px;
+      border: none;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+      transition: opacity 0.12s;
+      margin-top: 10px;
+    }
+    .add-to-cart-btn:active { opacity: 0.7; }
+
+    /* ── Cart view ── */
+    #cart-view { display: none; padding: 16px; }
+    #cart-view.active { display: block; }
+
+    .cart-empty {
+      text-align: center;
+      padding: 64px 24px;
+      color: var(--muted);
+    }
+    .cart-empty-icon { font-size: 3rem; margin-bottom: 12px; }
+    .cart-empty-text { font-size: 1.05rem; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+    .cart-empty-sub { font-size: 0.83rem; }
+
+    .cart-remove-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: none;
+      background: #ff3b3018;
+      color: #ff3b30;
+      font-size: 1rem;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.12s;
+    }
+    .cart-remove-btn:active { background: #ff3b3040; }
+
+    .cart-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .cart-action-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 14px;
+      border: none;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.12s;
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+    .cart-action-btn:active { opacity: 0.6; }
+    .cart-action-btn.danger { background: #ff3b3012; color: #ff3b30; }
+
     /* bottom safe area */
     .safe-bottom { height: calc(var(--safe-bottom) + 24px); }
   </style>
@@ -219,6 +320,7 @@
 <div class="header">
   <button class="back-btn" id="back-btn">‹</button>
   <span class="header-title" id="header-title">My Recipes</span>
+  <button class="cart-btn" id="cart-btn">🛒<span class="cart-badge" id="cart-badge"></span></button>
 </div>
 
 <div id="home-view">
@@ -238,6 +340,20 @@
     </div>
   </div>
   <div id="ingredient-list"></div>
+  <button class="add-to-cart-btn" id="add-to-cart-btn">Add to cart</button>
+</div>
+
+<div id="cart-view">
+  <div id="cart-empty" class="cart-empty">
+    <div class="cart-empty-icon">🛒</div>
+    <div class="cart-empty-text">Cart is empty</div>
+    <div class="cart-empty-sub">Pick a recipe and tap "Add to cart"</div>
+  </div>
+  <div id="cart-section"></div>
+  <div class="cart-actions" id="cart-actions" style="display:none">
+    <button class="cart-action-btn" id="btn-copy">Copy list</button>
+    <button class="cart-action-btn danger" id="btn-clear">Clear cart</button>
+  </div>
 </div>
 
 <div class="safe-bottom"></div>
@@ -393,7 +509,7 @@ const recipes = [
         { amount: 1, unit: 'tsp', name: 'Cornstarch' },
       ]},
       { name: 'Noodles', ingredients: [
-        { raw: '150-180g fresh noodles or 120g dried' },
+        { raw: 'Dried noodles - 120g (or 150-180g fresh)' },
         { amount: 125, unit: 'g', name: 'Pork / bacon' },
         { amount: 2,   unit: '', name: 'Garlic cloves' },
         { amount: 2,   unit: '', name: 'Spring onions' },
@@ -404,7 +520,7 @@ const recipes = [
     ]
   },
   {
-    id: 'kladdkaka', name: 'Kladdkaka', emoji: '🍫', baseServings: 2,
+    id: 'kladdkaka', name: 'Kladdkaka', emoji: '🍫', baseServings: 4,
     sections: [
       { name: 'Batter', ingredients: [
         { amount: 2,   unit: '', name: 'Eggs' },
@@ -535,7 +651,6 @@ function fmt(n) {
   if (Math.abs(n - Math.round(n)) < 0.001) return String(Math.round(n));
   if (n < 1)  return String(parseFloat(n.toFixed(2)));
   if (n < 10) return String(parseFloat(n.toFixed(1)));
-  // round to nearest 0.5 for larger values
   const r = Math.round(n * 2) / 2;
   return r % 1 === 0 ? String(r) : r.toFixed(1);
 }
@@ -577,6 +692,7 @@ let servings = 2;
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 const homeView      = document.getElementById('home-view');
 const detailView    = document.getElementById('detail-view');
+const cartView      = document.getElementById('cart-view');
 const backBtn       = document.getElementById('back-btn');
 const headerTitle   = document.getElementById('header-title');
 const servingDisp   = document.getElementById('serving-display');
@@ -608,6 +724,7 @@ function renderIngredients() {
 
 function showHome() {
   detailView.classList.remove('active');
+  cartView.classList.remove('active');
   homeView.style.display = '';
   backBtn.classList.remove('visible');
   headerTitle.textContent = 'My Recipes';
@@ -618,10 +735,21 @@ function showRecipe(recipe) {
   currentRecipe = recipe;
   servings = recipe.baseServings;
   homeView.style.display = 'none';
+  cartView.classList.remove('active');
   detailView.classList.add('active');
   backBtn.classList.add('visible');
   headerTitle.textContent = recipe.name;
   renderIngredients();
+  window.scrollTo(0, 0);
+}
+
+function showCart() {
+  homeView.style.display = 'none';
+  detailView.classList.remove('active');
+  cartView.classList.add('active');
+  backBtn.classList.add('visible');
+  headerTitle.textContent = 'Shopping Cart';
+  renderCart();
   window.scrollTo(0, 0);
 }
 
@@ -650,6 +778,229 @@ btnMinus.addEventListener('click', () => {
 btnPlus.addEventListener('click', () => {
   if (servings < 10) { servings++; renderIngredients(); }
 });
+
+// ── Cart ─────────────────────────────────────────────────────────────────────
+let cart = [];
+
+const CATEGORY_NAMES = ['Meat & protein', 'Vegetables', 'Pasta & rice', 'Spices & condiments'];
+
+function getCategory(item) {
+  if (item.rawText) {
+    const n = item.rawText.toLowerCase();
+    if (/\b(pasta|rice|noodles?)\b/.test(n)) return 2;
+    return 3;
+  }
+  const n = (item.name || '').toLowerCase();
+  if (/\b(meat|chicken|beef|pork|bacon|mince|minced|protein|halloumi|egg|sausage|fish|lamb)\b/.test(n)) return 0;
+  const notProcessed = !/powder|sauce|oil|spice|purée|puree|mashed|cream|stock/.test(n);
+  if (notProcessed && /\b(onion|garlic|carrot|pepper|potato|cucumber|tomato|mushroom|chilli|chili|leek|spring|courgette)\b/.test(n)) return 1;
+  if (/\b(pasta|rice|noodle)\b/.test(n)) return 2;
+  return 3;
+}
+
+function cartItemKey(ing) {
+  if (ing.taste) return `taste__${ing.name}`;
+  return `${ing.name}__${ing.unit}`;
+}
+
+// Merge items that appear both as a fixed amount and as "to taste"
+function getMergedItems() {
+  const tasteNames = new Set(cart.filter(c => c.taste).map(c => c.name));
+  const fixedNames = new Set(cart.filter(c => !c.taste && !c.rawText).map(c => c.name));
+  const combined   = new Set([...tasteNames].filter(n => fixedNames.has(n)));
+
+  return cart
+    .filter(c => !(c.taste && combined.has(c.name)))
+    .map(c => (!c.taste && !c.rawText && combined.has(c.name)) ? { ...c, plus: true } : c);
+}
+
+// Merged items sorted into category order (meat → veg → pasta → condiments)
+function getSortedMergedItems() {
+  const groups = CATEGORY_NAMES.map(() => []);
+  getMergedItems().forEach(item => groups[getCategory(item)].push(item));
+  return groups.flat();
+}
+
+function addToCart() {
+  const factor = servings / currentRecipe.baseServings;
+
+  currentRecipe.sections.forEach(sec => {
+    sec.ingredients.forEach(ing => {
+      if (ing.taste) {
+        const key = cartItemKey(ing);
+        if (!cart.find(c => c.key === key)) {
+          cart.push({ key, name: ing.name, taste: true });
+        }
+        return;
+      }
+
+      if (ing.raw) {
+        const scaled = ing.raw.replace(/\d+(?:\.\d+)?/g, m => fmt(parseFloat(m) * factor));
+        cart.push({ key: `raw__${Date.now()}${Math.random()}`, rawText: scaled });
+        return;
+      }
+
+      const key = cartItemKey(ing);
+      const existing = cart.find(c => c.key === key);
+
+      if (ing.amountMin !== undefined) {
+        const addMin = ing.amountMin * factor;
+        const addMax = ing.amountMax * factor;
+        if (existing) {
+          existing.totalMin += addMin;
+          existing.totalMax += addMax;
+        } else {
+          cart.push({ key, name: ing.name, unit: ing.unit, totalMin: addMin, totalMax: addMax });
+        }
+      } else {
+        const add = ing.amount * factor;
+        if (existing) {
+          existing.total += add;
+        } else {
+          cart.push({ key, name: ing.name, unit: ing.unit, total: add });
+        }
+      }
+    });
+  });
+
+  updateCartBadge();
+
+  const btn = document.getElementById('add-to-cart-btn');
+  btn.textContent = 'Added ✓';
+  btn.style.opacity = '0.65';
+  setTimeout(() => { btn.textContent = 'Add to cart'; btn.style.opacity = ''; }, 1200);
+}
+
+function removeFromCart(key, alsoTasteName) {
+  cart = cart.filter(c => c.key !== key);
+  if (alsoTasteName) cart = cart.filter(c => !(c.taste && c.name === alsoTasteName));
+  updateCartBadge();
+  renderCart();
+}
+
+function clearCart() {
+  cart = [];
+  updateCartBadge();
+  renderCart();
+}
+
+function formatCartAmount(item) {
+  if (item.taste) return 'to taste';
+  const plus = item.plus ? '+' : '';
+  if (item.totalMin !== undefined) {
+    const sep = item.unit && !WORD_UNITS.has(item.unit) ? '' : ' ';
+    return `${fmt(item.totalMin)}–${fmt(item.totalMax)}${sep}${item.unit}${plus}`.trim();
+  }
+  const sep = item.unit && !WORD_UNITS.has(item.unit) ? '' : ' ';
+  return `${fmt(item.total)}${sep}${item.unit}${plus}`.trim();
+}
+
+function updateCartBadge() {
+  const badge = document.getElementById('cart-badge');
+  if (cart.length > 0) {
+    badge.textContent = cart.length > 99 ? '99+' : cart.length;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderCart() {
+  const emptyEl   = document.getElementById('cart-empty');
+  const sectionEl = document.getElementById('cart-section');
+  const actionsEl = document.getElementById('cart-actions');
+
+  const items = getSortedMergedItems();
+
+  if (items.length === 0) {
+    emptyEl.style.display = '';
+    sectionEl.innerHTML = '';
+    actionsEl.style.display = 'none';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  actionsEl.style.display = '';
+  sectionEl.innerHTML = '';
+
+  // Group pre-sorted items into their category sections
+  const groups = CATEGORY_NAMES.map(() => []);
+  items.forEach(item => groups[getCategory(item)].push(item));
+
+  groups.forEach((group, gi) => {
+    if (group.length === 0) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'section';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'section-title';
+    titleEl.textContent = CATEGORY_NAMES[gi];
+    wrap.appendChild(titleEl);
+
+    group.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'ing-row';
+
+      if (item.rawText) {
+        const nameEl = document.createElement('span');
+        nameEl.className = 'ing-name';
+        nameEl.textContent = item.rawText;
+        row.appendChild(nameEl);
+      } else {
+        const nameEl = document.createElement('span');
+        nameEl.className = 'ing-name';
+        nameEl.textContent = item.name;
+
+        const amtEl = document.createElement('span');
+        amtEl.className = 'ing-amount' + (item.taste ? ' taste' : '');
+        amtEl.textContent = formatCartAmount(item);
+
+        row.appendChild(nameEl);
+        row.appendChild(amtEl);
+      }
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'cart-remove-btn';
+      removeBtn.textContent = '×';
+      removeBtn.addEventListener('click', () => removeFromCart(item.key, item.plus ? item.name : null));
+      row.appendChild(removeBtn);
+
+      wrap.appendChild(row);
+    });
+
+    sectionEl.appendChild(wrap);
+  });
+}
+
+function copyCart() {
+  const items = getSortedMergedItems();
+  const lines = items.map(item => {
+    if (item.rawText) return item.rawText;
+    return `${item.name} - ${formatCartAmount(item)}`;
+  });
+  const text = lines.join('\n');
+  const btn = document.getElementById('btn-copy');
+
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied ✓';
+    setTimeout(() => { btn.textContent = 'Copy list'; }, 1500);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = 'Copied ✓';
+    setTimeout(() => { btn.textContent = 'Copy list'; }, 1500);
+  });
+}
+
+document.getElementById('cart-btn').addEventListener('click', showCart);
+document.getElementById('add-to-cart-btn').addEventListener('click', addToCart);
+document.getElementById('btn-copy').addEventListener('click', copyCart);
+document.getElementById('btn-clear').addEventListener('click', clearCart);
 </script>
 </body>
 </html>
