@@ -371,7 +371,7 @@ const recipes = [
     sections: [
       { name: 'Dough', ingredients: [
         { amount: 250, unit: 'ml', name: 'Cold water' },
-        { amount: 400, unit: 'g',  name: 'Flour' },
+        { amount: 400, unit: 'g', altAmount: 400/60, altUnit: 'dl', name: 'Flour' },
         { amount: 1,   unit: 'g',  name: 'Dry yeast' },
         { amount: 8,   unit: 'g',  name: 'Sea salt' },
       ]},
@@ -407,7 +407,7 @@ const recipes = [
       ]},
       { name: 'Béchamel', ingredients: [
         { amount: 45, unit: 'g', name: 'Butter (3 tbsp)' },
-        { amount: 30, unit: 'g', name: 'Flour (3 tbsp)' },
+        { amount: 30, unit: 'g', altAmount: 30/60, altUnit: 'dl', name: 'Flour (3 tbsp)' },
         { amount: 8,  unit: 'L', name: 'Milk' },
       ]},
       { name: 'Topping', ingredients: [
@@ -423,7 +423,7 @@ const recipes = [
         { amount: 2,   unit: '',    name: 'Eggs' },
         { amount: 100, unit: 'ml', name: 'Sparkling water' },
         { amount: 200, unit: 'ml', name: 'Milk' },
-        { amountMin: 200, amountMax: 250, unit: 'g', name: 'Flour' },
+        { amountMin: 200, amountMax: 250, unit: 'g', altAmountMin: 200/60, altAmountMax: 250/60, altUnit: 'dl', name: 'Flour' },
         { amount: 0.5, unit: 'tsp', name: 'Baking powder' },
         { amount: 1,   unit: 'tbsp', name: 'Alcohol (whiskey or rum)' },
         { name: 'Oil',  taste: true },
@@ -513,7 +513,7 @@ const recipes = [
         { amount: 125, unit: 'g', name: 'Pork / bacon' },
         { amount: 2,   unit: '', name: 'Garlic cloves' },
         { amount: 2,   unit: '', name: 'Spring onions' },
-        { amount: 1,   unit: '', name: 'Egg' },
+        { amount: 1,   unit: '', name: 'Eggs' },
         { name: 'Soy',         taste: true },
         { name: 'Oyster sauce',taste: true },
       ]},
@@ -525,7 +525,7 @@ const recipes = [
       { name: 'Batter', ingredients: [
         { amount: 2,   unit: '', name: 'Eggs' },
         { amountMin: 2, amountMax: 2.5, unit: 'dl', name: 'Sugar' },
-        { amount: 1.5, unit: 'dl', name: 'Flour' },
+        { amount: 1.5, unit: 'dl', altAmount: 90, altUnit: 'g', name: 'Flour' },
         { amount: 100, unit: 'g',  name: 'Melted butter' },
         { amount: 3,   unit: 'tbsp', name: 'Cocoa' },
         { amount: 2,   unit: 'tsp', name: 'Vanilla sugar' },
@@ -590,7 +590,7 @@ const recipes = [
       { name: 'Fried rice', ingredients: [
         { amount: 3, unit: '', name: 'Garlic cloves' },
         { amount: 1, unit: '', name: 'Onion' },
-        { amount: 1, unit: '', name: 'Egg' },
+        { amount: 1, unit: '', name: 'Eggs' },
         { name: 'Frozen mixed veggies', taste: true },
         { name: 'Rice',        taste: true },
         { name: 'Soy',         taste: true },
@@ -603,7 +603,7 @@ const recipes = [
     sections: [
       { name: 'Batter', ingredients: [
         { amount: 3,  unit: '', name: 'Eggs' },
-        { amount: 180, unit: 'g', name: 'Flour (3 dl)' },
+        { amount: 180, unit: 'g', altAmount: 3, altUnit: 'dl', name: 'Flour' },
         { amountMin: 500, amountMax: 600, unit: 'ml', name: 'Milk (5–6 dl)' },
       ]},
     ]
@@ -638,7 +638,7 @@ const recipes = [
       ]},
       { name: 'Pita dough', ingredients: [
         { amount: 175, unit: 'ml', name: 'Cold water' },
-        { amount: 280, unit: 'g',  name: 'Flour' },
+        { amount: 280, unit: 'g', altAmount: 280/60, altUnit: 'dl', name: 'Flour' },
         { amount: 0.7, unit: 'g',  name: 'Dry yeast' },
         { amount: 5.6, unit: 'g',  name: 'Sea salt' },
       ]},
@@ -657,12 +657,26 @@ function fmt(n) {
 
 const WORD_UNITS = new Set(['tsp', 'tbsp', 'dl', 'L']);
 
+const SINGULAR_MAP = { 'Eggs': 'Egg' };
+function displayName(name, qty) {
+  return (Math.abs(qty - 1) < 0.001 && SINGULAR_MAP[name]) ? SINGULAR_MAP[name] : name;
+}
+
 function formatAmount(ing, factor) {
+  function altSuffix() {
+    if (ing.altUnit === undefined) return '';
+    const s = WORD_UNITS.has(ing.altUnit) ? ' ' : '';
+    if (ing.altAmountMin !== undefined)
+      return ` (${fmt(ing.altAmountMin * factor)}–${fmt(ing.altAmountMax * factor)}${s}${ing.altUnit})`;
+    if (ing.altAmount !== undefined)
+      return ` (${fmt(ing.altAmount * factor)}${s}${ing.altUnit})`;
+    return '';
+  }
   if (ing.amountMin !== undefined) {
-    return `${fmt(ing.amountMin * factor)}–${fmt(ing.amountMax * factor)} ${ing.unit}`.trim();
+    return `${fmt(ing.amountMin * factor)}–${fmt(ing.amountMax * factor)} ${ing.unit}${altSuffix()}`.trim();
   }
   const sep = ing.unit && !WORD_UNITS.has(ing.unit) ? '' : ' ';
-  return `${fmt(ing.amount * factor)}${sep}${ing.unit}`.trim();
+  return `${fmt(ing.amount * factor)}${sep}${ing.unit}${altSuffix()}`.trim();
 }
 
 function buildIngRow(ing, factor) {
@@ -681,7 +695,8 @@ function buildIngRow(ing, factor) {
     return row;
   }
 
-  row.innerHTML = `<span class="ing-name">${ing.name}</span><span class="ing-amount">${formatAmount(ing, factor)}</span>`;
+  const qty = ing.amountMin !== undefined ? ing.amountMin * factor : ing.amount * factor;
+  row.innerHTML = `<span class="ing-name">${displayName(ing.name, qty)}</span><span class="ing-amount">${formatAmount(ing, factor)}</span>`;
   return row;
 }
 
@@ -950,7 +965,8 @@ function renderCart() {
       } else {
         const nameEl = document.createElement('span');
         nameEl.className = 'ing-name';
-        nameEl.textContent = item.name;
+        const cartQty = item.totalMin !== undefined ? item.totalMin : (item.total ?? 1);
+        nameEl.textContent = displayName(item.name, cartQty);
 
         const amtEl = document.createElement('span');
         amtEl.className = 'ing-amount' + (item.taste ? ' taste' : '');
@@ -977,7 +993,8 @@ function copyCart() {
   const items = getSortedMergedItems();
   const lines = items.map(item => {
     if (item.rawText) return item.rawText;
-    return `${item.name} - ${formatCartAmount(item)}`;
+    const copyQty = item.totalMin !== undefined ? item.totalMin : (item.total ?? 1);
+    return `${displayName(item.name, copyQty)} - ${formatCartAmount(item)}`;
   });
   const text = lines.join('\n');
   const btn = document.getElementById('btn-copy');
